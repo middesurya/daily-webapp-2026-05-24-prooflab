@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProofLab — Interactive Neural Theorem Proving & Formal Verification Laboratory</title>
+<style>
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface2: #1a2332;
+  --border: #2a3a4a;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #6366f1;
+  --accent2: #8b5cf6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --cyan: #06b6d4;
+  --pink: #ec4899;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-sans); min-height:100vh; overflow-x:hidden; }
+.header { padding:2rem 2rem 1rem; text-align:center; border-bottom:1px solid var(--border); background:linear-gradient(180deg, #0f1724 0%, var(--bg) 100%); }
+.header h1 { font-size:2.5rem; font-weight:800; background:linear-gradient(135deg, var(--accent), var(--accent2), var(--cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:0.5rem; }
+.header p { color:var(--text-dim); font-size:1rem; max-width:700px; margin:0 auto; }
+.nav { display:flex; justify-content:center; gap:0.5rem; padding:1rem 2rem; flex-wrap:wrap; border-bottom:1px solid var(--border); background:var(--surface); }
+.nav button { background:var(--surface2); border:1px solid var(--border); color:var(--text-dim); padding:0.6rem 1.2rem; border-radius:8px; cursor:pointer; font-size:0.85rem; transition:all 0.2s; font-family:var(--font-sans); }
+.nav button:hover { border-color:var(--accent); color:var(--text); }
+.nav button.active { background:var(--accent); border-color:var(--accent); color:white; }
+.module { display:none; padding:2rem; max-width:1400px; margin:0 auto; }
+.module.active { display:block; }
+.module h2 { font-size:1.5rem; margin-bottom:0.5rem; color:var(--accent); }
+.module .subtitle { color:var(--text-dim); margin-bottom:1.5rem; font-size:0.9rem; }
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem; }
+.panel h3 { font-size:1rem; color:var(--cyan); margin-bottom:1rem; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; }
+@media(max-width:900px) { .grid2,.grid3 { grid-template-columns:1fr; } }
+canvas { border-radius:8px; background:var(--surface2); display:block; width:100%; }
+.btn { background:var(--accent); color:white; border:none; padding:0.6rem 1.2rem; border-radius:6px; cursor:pointer; font-size:0.85rem; transition:all 0.2s; }
+.btn:hover { background:var(--accent2); transform:translateY(-1px); }
+.btn-sm { padding:0.4rem 0.8rem; font-size:0.75rem; }
+.btn-outline { background:transparent; border:1px solid var(--accent); color:var(--accent); }
+.btn-outline:hover { background:var(--accent); color:white; }
+.btn-success { background:var(--success); }
+.btn-warning { background:var(--warning); color:#000; }
+.controls { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem; }
+.stat { text-align:center; padding:1rem; background:var(--surface2); border-radius:8px; }
+.stat .value { font-size:1.8rem; font-weight:700; color:var(--accent); }
+.stat .label { font-size:0.75rem; color:var(--text-dim); margin-top:0.3rem; }
+select, input[type=range] { background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:0.4rem 0.8rem; border-radius:6px; font-size:0.85rem; }
+input[type=range] { width:150px; }
+.code { font-family:var(--font-mono); font-size:0.8rem; background:var(--surface2); padding:1rem; border-radius:8px; overflow-x:auto; white-space:pre; color:var(--cyan); line-height:1.6; max-height:300px; overflow-y:auto; }
+.tree-node { display:inline-block; padding:0.3rem 0.6rem; border-radius:4px; font-family:var(--font-mono); font-size:0.75rem; margin:2px; }
+.node-goal { background:#1e3a5f; border:1px solid var(--cyan); color:var(--cyan); }
+.node-tactic { background:#2d1f4e; border:1px solid var(--accent2); color:var(--accent2); }
+.node-success { background:#0f3d2e; border:1px solid var(--success); color:var(--success); }
+.node-failed { background:#3d1f1f; border:1px solid var(--error); color:var(--error); }
+.progress-bar { height:6px; background:var(--surface2); border-radius:3px; overflow:hidden; margin:0.5rem 0; }
+.progress-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--cyan)); border-radius:3px; transition:width 0.3s; }
+.tag { display:inline-block; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); margin:2px; }
+.tag-type { background:#1e3a5f; color:var(--cyan); }
+.tag-prop { background:#2d1f4e; color:var(--accent2); }
+.tag-term { background:#1f3d2e; color:var(--success); }
+.tooltip { position:absolute; background:var(--surface); border:1px solid var(--border); padding:0.5rem; border-radius:6px; font-size:0.75rem; pointer-events:none; z-index:100; max-width:250px; }
+.log { font-family:var(--font-mono); font-size:0.75rem; max-height:200px; overflow-y:auto; padding:0.5rem; background:var(--surface2); border-radius:6px; }
+.log-entry { padding:0.2rem 0; border-bottom:1px solid var(--border); }
+.log-entry .time { color:var(--text-dim); }
+.log-entry .msg { color:var(--text); }
+.badge { display:inline-block; padding:0.15rem 0.4rem; border-radius:3px; font-size:0.65rem; font-weight:600; }
+.badge-neural { background:var(--accent); color:white; }
+.badge-classical { background:var(--warning); color:#000; }
+footer { text-align:center; padding:2rem; color:var(--text-dim); font-size:0.8rem; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="header">
+<h1>ProofLab</h1>
+<p>Interactive Neural Theorem Proving & Formal Verification Laboratory — Explore how AI proves mathematical theorems through proof search, tactic prediction, and the Curry-Howard correspondence</p>
+</div>
+
+<div class="nav">
+<button class="active" onclick="showModule(0)">🌳 Proof Tree Explorer</button>
+<button onclick="showModule(1)">🧠 Neural Tactic Predictor</button>
+<button onclick="showModule(2)">⚡ SAT→Proof Visualizer</button>
+<button onclick="showModule(3)">λ Curry-Howard</button>
+<button onclick="showModule(4)">📊 Difficulty Estimator</button>
+<button onclick="showModule(5)">🏟️ Verification Arena</button>
+</div>
+
+<!-- Module 0: Proof Tree Explorer -->
+<div class="module active" id="mod0">
+<h2>Proof Tree Explorer</h2>
+<p class="subtitle">Visualize how automated theorem provers search for proofs: goals split into subgoals via tactics, forming a search tree with backtracking and success paths.</p>
+<div class="grid2">
+<div class="panel">
+<h3>Theorem Selection</h3>
+<div class="controls">
+<select id="theorem-select" onchange="resetProofTree()">
+<option value="0">∀ n : ℕ, n + 0 = n (Nat.add_zero)</option>
+<option value="1">∀ a b : ℕ, a + b = b + a (Nat.add_comm)</option>
+<option value="2">∀ P Q : Prop, P → (P → Q) → Q (modus_ponens)</option>
+<option value="3">∀ P Q R, (P → Q) → (Q → R) → (P → R) (syllogism)</option>
+<option value="4">∀ n : ℕ, 0 + n = n (Nat.zero_add)</option>
+</select>
+</div>
+<div class="controls">
+<button class="btn" onclick="stepProofTree()">Step →</button>
+<button class="btn btn-outline" onclick="autoProofTree()">Auto-Solve</button>
+<button class="btn btn-outline" onclick="resetProofTree()">Reset</button>
+<span style="margin-left:1rem;font-size:0.8rem;color:var(--text-dim)" id="proof-status">Ready</span>
+</div>
+<canvas id="tree-canvas" width="600" height="400"></canvas>
+</div>
+<div>
+<div class="panel">
+<h3>Current Goal State</h3>
+<div class="code" id="goal-state">-- Select a theorem and step through the proof
+-- Goals appear here as the prover works
+
+⊢ ∀ n : ℕ, n + 0 = n</div>
+</div>
+<div class="panel">
+<h3>Tactic Trace</h3>
+<div class="log" id="tactic-log"></div>
+</div>
+<div class="panel">
+<h3>Statistics</h3>
+<div class="grid3">
+<div class="stat"><div class="value" id="stat-nodes">0</div><div class="label">Nodes Explored</div></div>
+<div class="stat"><div class="value" id="stat-depth">0</div><div class="label">Max Depth</div></div>
+<div class="stat"><div class="value" id="stat-backtracks">0</div><div class="label">Backtracks</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Module 1: Neural Tactic Predictor -->
+<div class="module" id="mod1">
+<h2>Neural Tactic Predictor</h2>
+<p class="subtitle">Train a miniature neural network to predict the next proof tactic given a goal state — the core mechanism behind systems like AlphaProof and LeanDojo.</p>
+<div class="grid2">
+<div class="panel">
+<h3>Training Visualization</h3>
+<div class="controls">
+<button class="btn" onclick="trainNTP()">Train Epoch</button>
+<button class="btn btn-outline" onclick="trainNTP10()">Train 10 Epochs</button>
+<button class="btn btn-outline" onclick="resetNTP()">Reset Model</button>
+<span style="margin-left:0.5rem;font-size:0.8rem;color:var(--text-dim)">Epoch: <span id="ntp-epoch">0</span> | Loss: <span id="ntp-loss">—</span></span>
+</div>
+<canvas id="ntp-canvas" width="600" height="300"></canvas>
+<div style="margin-top:1rem">
+<h3>Loss Curve</h3>
+<canvas id="loss-canvas" width="600" height="150"></canvas>
+</div>
+</div>
+<div>
+<div class="panel">
+<h3>Goal → Tactic Predictions</h3>
+<p style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem">The network maps goal embeddings to tactic probability distributions</p>
+<div id="ntp-predictions">
+<div style="margin-bottom:0.5rem">
+<div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--cyan)">Goal: n + 0 = n</div>
+<div id="pred-bars-0" class="pred-bars"></div>
+</div>
+<div style="margin-bottom:0.5rem">
+<div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--cyan)">Goal: a + b = b + a</div>
+<div id="pred-bars-1" class="pred-bars"></div>
+</div>
+<div style="margin-bottom:0.5rem">
+<div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--cyan)">Goal: P → (P → Q) → Q</div>
+<div id="pred-bars-2" class="pred-bars"></div>
+</div>
+</div>
+</div>
+<div class="panel">
+<h3>Model Architecture</h3>
+<div class="code">NeuralTacticPredictor(
+  encoder: Linear(goal_dim=8, hidden=16)
+  activation: ReLU
+  decoder: Linear(hidden=16, tactics=6)
+  output: Softmax
+)
+
+Tactics: [induction, rewrite, intro,
+          apply, simp, rfl]
+
+Training: CrossEntropy + SGD(lr=0.1)</div>
+</div>
+<div class="panel">
+<h3>Training Data (Proof Corpus)</h3>
+<div class="code" style="font-size:0.7rem" id="training-data">-- 12 goal→tactic pairs from Lean4 mathlib
+{goal: "n+0=n",       tactic: "induction"}
+{goal: "a+b=b+a",    tactic: "induction"}
+{goal: "P→(P→Q)→Q", tactic: "intro"}
+{goal: "succ n=succ m", tactic: "simp"}
+{goal: "0+n=n",       tactic: "induction"}
+{goal: "a*(b+c)=..",  tactic: "rewrite"}
+{goal: "P∧Q→Q∧P",   tactic: "intro"}
+{goal: "n=n",         tactic: "rfl"}
+{goal: "a+succ b=..", tactic: "rewrite"}
+{goal: "P→P",        tactic: "intro"}
+{goal: "list.len≥0", tactic: "induction"}
+{goal: "f(g(x))=..",  tactic: "simp"}</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Module 2: SAT→Proof Visualizer -->
+<div class="module" id="mod2">
+<h2>SAT → Proof Visualizer</h2>
+<p class="subtitle">Watch the DPLL/CDCL algorithm solve Boolean satisfiability problems step-by-step. See how conflict-driven clause learning creates resolution proofs.</p>
+<div class="grid2">
+<div class="panel">
+<h3>SAT Instance</h3>
+<div class="controls">
+<select id="sat-select" onchange="resetSAT()">
+<option value="0">Simple: (x₁∨x₂) ∧ (¬x₁∨x₃) ∧ (¬x₂∨¬x₃)</option>
+<option value="1">Pigeon: 3 pigeons, 2 holes (UNSAT)</option>
+<option value="2">Graph Coloring: K₃ with 2 colors (UNSAT)</option>
+<option value="3">Random 3-SAT: 5 vars, 10 clauses</option>
+</select>
+</div>
+<div class="controls">
+<button class="btn" onclick="stepSAT()">Step →</button>
+<button class="btn btn-outline" onclick="autoSAT()">Auto-Solve</button>
+<button class="btn btn-outline" onclick="resetSAT()">Reset</button>
+<label style="font-size:0.8rem;color:var(--text-dim);margin-left:1rem">
+<input type="checkbox" id="sat-neural" onchange="resetSAT()"> Neural Guidance
+</label>
+</div>
+<canvas id="sat-canvas" width="600" height="350"></canvas>
+</div>
+<div>
+<div class="panel">
+<h3>Decision Trail</h3>
+<div class="code" id="sat-trail" style="min-height:100px">-- Assignments will appear here
+-- D=Decision, P=Propagation, C=Conflict</div>
+</div>
+<div class="panel">
+<h3>Learned Clauses</h3>
+<div class="code" id="sat-learned" style="min-height:80px">-- Conflict-driven clauses appear here</div>
+</div>
+<div class="panel">
+<h3>Statistics</h3>
+<div class="grid3">
+<div class="stat"><div class="value" id="sat-decisions">0</div><div class="label">Decisions</div></div>
+<div class="stat"><div class="value" id="sat-propagations">0</div><div class="label">Propagations</div></div>
+<div class="stat"><div class="value" id="sat-conflicts">0</div><div class="label">Conflicts</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Module 3: Curry-Howard -->
+<div class="module" id="mod3">
+<h2>Curry-Howard Playground</h2>
+<p class="subtitle">The Curry-Howard correspondence: proofs ARE programs, propositions ARE types. Construct proofs by building λ-terms in a simple type theory.</p>
+<div class="grid2">
+<div class="panel">
+<h3>Proposition to Prove</h3>
+<div class="controls">
+<select id="ch-select" onchange="resetCH()">
+<option value="0">A → A (identity)</option>
+<option value="1">A → B → A (const)</option>
+<option value="2">(A → B) → (B → C) → (A → C) (compose)</option>
+<option value="3">A → B → (A ∧ B) (pair)</option>
+<option value="4">(A ∧ B) → A (fst)</option>
+<option value="5">(A ∨ B) → (A → C) → (B → C) → C (case)</option>
+</select>
+</div>
+<div style="background:var(--surface2);padding:1rem;border-radius:8px;margin-bottom:1rem">
+<div style="font-size:0.8rem;color:var(--text-dim)">Type (Proposition):</div>
+<div style="font-family:var(--font-mono);font-size:1.1rem;color:var(--cyan)" id="ch-type">A → A</div>
+<div style="font-size:0.8rem;color:var(--text-dim);margin-top:0.5rem">Term (Proof):</div>
+<div style="font-family:var(--font-mono);font-size:1.1rem;color:var(--success)" id="ch-term">_</div>
+</div>
+<div class="controls">
+<button class="btn" onclick="chIntro()">λ intro</button>
+<button class="btn btn-outline" onclick="chApply()">apply</button>
+<button class="btn btn-outline" onclick="chPair()">⟨,⟩ pair</button>
+<button class="btn btn-outline" onclick="chFst()">π₁ fst</button>
+<button class="btn btn-outline" onclick="chSnd()">π₂ snd</button>
+<button class="btn btn-outline" onclick="chVar()">var</button>
+<button class="btn btn-warning btn-sm" onclick="resetCH()">reset</button>
+</div>
+<canvas id="ch-canvas" width="600" height="280"></canvas>
+</div>
+<div>
+<div class="panel">
+<h3>Context (Hypotheses)</h3>
+<div class="code" id="ch-context" style="min-height:80px">-- Available assumptions will appear here</div>
+</div>
+<div class="panel">
+<h3>Correspondence Table</h3>
+<div style="font-size:0.8rem">
+<table style="width:100%;border-collapse:collapse">
+<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:0.4rem;color:var(--accent2)">Logic</th><th style="text-align:left;padding:0.4rem;color:var(--cyan)">Programming</th></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Proposition</td><td style="padding:0.4rem;font-family:var(--font-mono)">Type</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">Proof</td><td style="padding:0.4rem;font-family:var(--font-mono)">Program (term)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">A → B (implication)</td><td style="padding:0.4rem;font-family:var(--font-mono)">A → B (function)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">A ∧ B (conjunction)</td><td style="padding:0.4rem;font-family:var(--font-mono)">A × B (product)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">A ∨ B (disjunction)</td><td style="padding:0.4rem;font-family:var(--font-mono)">A + B (sum)</td></tr>
+<tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem">∀x.P(x)</td><td style="padding:0.4rem;font-family:var(--font-mono)">Π(x:A).B(x)</td></tr>
+<tr><td style="padding:0.4rem">∃x.P(x)</td><td style="padding:0.4rem;font-family:var(--font-mono)">Σ(x:A).B(x)</td></tr>
+</table>
+</div>
+</div>
+<div class="panel">
+<h3>Proof History</h3>
+<div class="log" id="ch-log"></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Module 4: Difficulty Estimator -->
+<div class="module" id="mod4">
+<h2>Proof Difficulty Estimator</h2>
+<p class="subtitle">Neural provers use structural features to estimate theorem difficulty and guide search. Explore how proof complexity correlates with syntactic and semantic features.</p>
+<div class="grid2">
+<div class="panel">
+<h3>Theorem Feature Space</h3>
+<canvas id="diff-canvas" width="600" height="400"></canvas>
+<div class="controls" style="margin-top:1rem">
+<button class="btn" onclick="generateTheorems()">Generate Theorems</button>
+<button class="btn btn-outline" onclick="toggleDiffView()">Toggle View</button>
+<select id="diff-x" onchange="redrawDiff()">
+<option value="depth">Nesting Depth</option>
+<option value="vars">Variable Count</option>
+<option value="quantifiers">Quantifier Count</option>
+<option value="connectives">Connective Count</option>
+</select>
+<select id="diff-y" onchange="redrawDiff()">
+<option value="vars">Variable Count</option>
+<option value="depth">Nesting Depth</option>
+<option value="quantifiers">Quantifier Count</option>
+<option value="steps">Proof Steps</option>
+</select>
+</div>
+</div>
+<div>
+<div class="panel">
+<h3>Difficulty Prediction</h3>
+<div id="diff-predictions"></div>
+</div>
+<div class="panel">
+<h3>Feature Importance (Learned Weights)</h3>
+<canvas id="feat-canvas" width="300" height="200"></canvas>
+</div>
+<div class="panel">
+<h3>Difficulty Distribution</h3>
+<canvas id="dist-canvas" width="300" height="150"></canvas>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Module 5: Verification Arena -->
+<div class="module" id="mod5">
+<h2>Verification Arena</h2>
+<p class="subtitle">Race neural proof search against classical tactic-based approaches on benchmark theorems. See where AI excels and where traditional methods still win.</p>
+<div class="panel">
+<div class="controls">
+<button class="btn" onclick="startArena()">Start Race!</button>
+<button class="btn btn-outline" onclick="resetArena()">Reset</button>
+<select id="arena-bench">
+<option value="nat">Natural Number Theorems (20)</option>
+<option value="logic">Propositional Logic (15)</option>
+<option value="list">List Lemmas (12)</option>
+<option value="mixed">Mixed Benchmark (30)</option>
+</select>
+<label style="font-size:0.8rem;color:var(--text-dim);margin-left:1rem">
+Speed: <input type="range" id="arena-speed" min="1" max="10" value="5">
+</label>
+</div>
+</div>
+<div class="grid2">
+<div class="panel">
+<h3><span class="badge badge-neural">NEURAL</span> Neural Proof Search (AlphaProof-style)</h3>
+<div class="progress-bar"><div class="progress-fill" id="neural-progress" style="width:0%"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-dim)">
+<span>Proved: <span id="neural-proved" style="color:var(--success)">0</span>/<span id="neural-total">20</span></span>
+<span>Failed: <span id="neural-failed" style="color:var(--error)">0</span></span>
+<span>Time: <span id="neural-time">0.0s</span></span>
+</div>
+<canvas id="neural-canvas" width="500" height="200" style="margin-top:1rem"></canvas>
+<div class="log" id="neural-log" style="margin-top:0.5rem"></div>
+</div>
+<div class="panel">
+<h3><span class="badge badge-classical">CLASSICAL</span> Classical Tactic Search (BFS + Heuristics)</h3>
+<div class="progress-bar"><div class="progress-fill" id="classical-progress" style="width:0%"></div></div>
+<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:var(--text-dim)">
+<span>Proved: <span id="classical-proved" style="color:var(--success)">0</span>/<span id="classical-total">20</span></span>
+<span>Failed: <span id="classical-failed" style="color:var(--error)">0</span></span>
+<span>Time: <span id="classical-time">0.0s</span></span>
+</div>
+<canvas id="classical-canvas" width="500" height="200" style="margin-top:1rem"></canvas>
+<div class="log" id="classical-log" style="margin-top:0.5rem"></div>
+</div>
+</div>
+<div class="panel" style="margin-top:1.5rem">
+<h3>Head-to-Head Results</h3>
+<div class="grid3" id="arena-results">
+<div class="stat"><div class="value" id="arena-neural-wins">—</div><div class="label">Neural Wins</div></div>
+<div class="stat"><div class="value" id="arena-ties">—</div><div class="label">Ties</div></div>
+<div class="stat"><div class="value" id="arena-classical-wins">—</div><div class="label">Classical Wins</div></div>
+</div>
+</div>
+</div>
+
+<footer>
+ProofLab — Built with zero dependencies | Neural Theorem Proving & Formal Verification | MIT License 2026<br>
+<span style="font-size:0.7rem">Inspired by AlphaProof (DeepMind), LeanDojo, Lean Copilot & MIT's 2026 Breakthrough Technologies</span>
+</footer>
+
+<script>
+// ===== NAVIGATION =====
+const modules = document.querySelectorAll('.module');
+const navBtns = document.querySelectorAll('.nav button');
+function showModule(i) {
+  modules.forEach((m,idx) => { m.classList.toggle('active', idx===i); });
+  navBtns.forEach((b,idx) => { b.classList.toggle('active', idx===i); });
+}
+
+// ===== MODULE 0: PROOF TREE EXPLORER =====
+const theorems = [
+  { name:"Nat.add_zero", goal:"∀ n : ℕ, n + 0 = n", tactics:[
+    {tactic:"intro n", subgoals:["n + 0 = n"]},
+    {tactic:"induction n", subgoals:["Base: 0 + 0 = 0","Step: succ n + 0 = succ n"]},
+    {tactic:"rfl", subgoals:[]},
+    {tactic:"simp [ih]", subgoals:[]}
+  ]},
+  { name:"Nat.add_comm", goal:"∀ a b : ℕ, a + b = b + a", tactics:[
+    {tactic:"intro a b", subgoals:["a + b = b + a"]},
+    {tactic:"induction a", subgoals:["Base: 0 + b = b + 0","Step: succ a + b = b + succ a"]},
+    {tactic:"simp [Nat.zero_add, Nat.add_zero]", subgoals:[]},
+    {tactic:"simp [Nat.succ_add, Nat.add_succ, ih]", subgoals:[]}
+  ]},
+  { name:"modus_ponens", goal:"∀ P Q : Prop, P → (P → Q) → Q", tactics:[
+    {tactic:"intro P Q hp hpq", subgoals:["Q"]},
+    {tactic:"apply hpq", subgoals:["P"]},
+    {tactic:"exact hp", subgoals:[]}
+  ]},
+  { name:"syllogism", goal:"∀ P Q R, (P→Q)→(Q→R)→(P→R)", tactics:[
+    {tactic:"intro P Q R hpq hqr hp", subgoals:["R"]},
+    {tactic:"apply hqr", subgoals:["Q"]},
+    {tactic:"apply hpq", subgoals:["P"]},
+    {tactic:"exact hp", subgoals:[]}
+  ]},
+  { name:"Nat.zero_add", goal:"∀ n : ℕ, 0 + n = n", tactics:[
+    {tactic:"intro n", subgoals:["0 + n = n"]},
+    {tactic:"induction n", subgoals:["Base: 0 + 0 = 0","Step: 0 + succ n = succ n"]},
+    {tactic:"rfl", subgoals:[]},
+    {tactic:"simp [Nat.add_succ, ih]", subgoals:[]}
+  ]}
+];
+
+let proofState = { step:0, nodes:[], maxDepth:0, backtracks:0, solved:false, timer:null };
+
+function resetProofTree() {
+  if(proofState.timer) clearInterval(proofState.timer);
+  proofState = { step:0, nodes:[], maxDepth:0, backtracks:0, solved:false, timer:null };
+  const idx = document.getElementById('theorem-select').value;
+  const thm = theorems[idx];
+  document.getElementById('goal-state').textContent = "⊢ " + thm.goal;
+  document.getElementById('tactic-log').innerHTML = '';
+  document.getElementById('proof-status').textContent = 'Ready';
+  document.getElementById('stat-nodes').textContent = '0';
+  document.getElementById('stat-depth').textContent = '0';
+  document.getElementById('stat-backtracks').textContent = '0';
+  drawProofTree();
+}
+
+function stepProofTree() {
+  if(proofState.solved) return;
+  const idx = document.getElementById('theorem-select').value;
+  const thm = theorems[idx];
+  if(proofState.step >= thm.tactics.length) { proofState.solved=true; document.getElementById('proof-status').textContent='✓ QED'; return; }
+  
+  const t = thm.tactics[proofState.step];
+  proofState.nodes.push({ tactic:t.tactic, subgoals:t.subgoals, depth:proofState.step+1 });
+  proofState.maxDepth = Math.max(proofState.maxDepth, proofState.step+1);
+  proofState.step++;
+  
+  // Simulate occasional backtrack
+  if(Math.random() < 0.15 && proofState.step < thm.tactics.length) {
+    proofState.backtracks++;
+    proofState.nodes.push({ tactic:'(backtrack)', subgoals:[], depth:proofState.step, failed:true });
+  }
+  
+  const goalText = t.subgoals.length > 0 ? t.subgoals.join('\n') : 'No goals (QED)';
+  document.getElementById('goal-state').textContent = `-- After: ${t.tactic}\n\n${goalText}`;
+  
+  const log = document.getElementById('tactic-log');
+  log.innerHTML += `<div class="log-entry"><span class="time">[${proofState.step}]</span> <span class="msg" style="color:var(--accent2)">${t.tactic}</span> → ${t.subgoals.length} subgoal(s)</div>`;
+  log.scrollTop = log.scrollHeight;
+  
+  document.getElementById('stat-nodes').textContent = proofState.nodes.length;
+  document.getElementById('stat-depth').textContent = proofState.maxDepth;
+  document.getElementById('stat-backtracks').textContent = proofState.backtracks;
+  
+  if(proofState.step >= thm.tactics.length) { proofState.solved=true; document.getElementById('proof-status').textContent='✓ QED'; }
+  else { document.getElementById('proof-status').textContent = `Step ${proofState.step}/${thm.tactics.length}`; }
+  
+  drawProofTree();
+}
+
+function autoProofTree() {
+  if(proofState.timer) clearInterval(proofState.timer);
+  proofState.timer = setInterval(() => {
+    if(proofState.solved) { clearInterval(proofState.timer); return; }
+    stepProofTree();
+  }, 600);
+}
+
+function drawProofTree() {
+  const canvas = document.getElementById('tree-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  if(proofState.nodes.length === 0) {
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click "Step →" to begin proof search', W/2, H/2);
+    return;
+  }
+  
+  // Draw tree
+  const nodeR = 20;
+  const startY = 40;
+  const levelH = 70;
+  
+  // Root
+  ctx.beginPath();
+  ctx.arc(W/2, startY, nodeR, 0, Math.PI*2);
+  ctx.fillStyle = '#1e3a5f';
+  ctx.fill();
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#06b6d4';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Goal', W/2, startY+4);
+  
+  let prevX = W/2, prevY = startY;
+  
+  proofState.nodes.forEach((node, i) => {
+    const y = startY + (i+1) * levelH;
+    const spread = Math.max(60, (W-100) / (proofState.nodes.length+1));
+    const x = W/2 + (i % 2 === 0 ? -1 : 1) * (Math.floor(i/2)+1) * spread * 0.3;
+    
+    // Edge
+    ctx.beginPath();
+    ctx.moveTo(prevX, prevY + nodeR);
+    ctx.lineTo(x, y - nodeR);
+    ctx.strokeStyle = node.failed ? '#ef4444' : '#6366f1';
+    ctx.lineWidth = node.failed ? 1 : 2;
+    ctx.setLineDash(node.failed ? [4,4] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Node
+    ctx.beginPath();
+    ctx.arc(x, y, nodeR, 0, Math.PI*2);
+    if(node.failed) { ctx.fillStyle='#3d1f1f'; ctx.strokeStyle='#ef4444'; }
+    else if(node.subgoals.length===0) { ctx.fillStyle='#0f3d2e'; ctx.strokeStyle='#10b981'; }
+    else { ctx.fillStyle='#2d1f4e'; ctx.strokeStyle='#8b5cf6'; }
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Label
+    ctx.fillStyle = node.failed ? '#ef4444' : node.subgoals.length===0 ? '#10b981' : '#8b5cf6';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.tactic.substring(0,12), x, y+4);
+    
+    if(!node.failed) { prevX = x; prevY = y; }
+  });
+}
+
+// ===== MODULE 1: NEURAL TACTIC PREDICTOR =====
+const TACTICS = ['induction','rewrite','intro','apply','simp','rfl'];
+const TRAIN_DATA = [
+  {features:[1,0,0,1,0,0,1,0], label:0}, // induction
+  {features:[1,0,0,1,0,1,0,0], label:0}, // induction
+  {features:[0,1,0,0,1,0,0,1], label:2}, // intro
+  {features:[0,0,1,0,0,1,1,0], label:4}, // simp
+  {features:[1,0,0,0,1,0,1,0], label:0}, // induction
+  {features:[0,1,0,1,0,1,0,0], label:1}, // rewrite
+  {features:[0,1,0,0,1,0,0,1], label:2}, // intro
+  {features:[0,0,0,0,0,0,1,1], label:5}, // rfl
+  {features:[1,0,1,1,0,0,0,0], label:1}, // rewrite
+  {features:[0,1,0,0,1,0,1,0], label:2}, // intro
+  {features:[1,0,0,1,0,0,0,1], label:0}, // induction
+  {features:[0,0,1,0,1,1,0,0], label:4}, // simp
+];
+const TEST_GOALS = [
+  {features:[1,0,0,1,0,0,1,0], name:"n+0=n"},
+  {features:[1,0,0,1,0,1,0,0], name:"a+b=b+a"},
+  {features:[0,1,0,0,1,0,0,1], name:"P→(P→Q)→Q"}
+];
+
+let ntpModel = null;
+let ntpEpoch = 0;
+let lossHistory = [];
+
+function initNTP() {
+  // Simple 2-layer network: 8->16->6
+  ntpModel = {
+    W1: Array.from({length:16}, () => Array.from({length:8}, () => (Math.random()-0.5)*0.5)),
+    b1: Array(16).fill(0),
+    W2: Array.from({length:6}, () => Array.from({length:16}, () => (Math.random()-0.5)*0.5)),
+    b2: Array(6).fill(0)
+  };
+  ntpEpoch = 0;
+  lossHistory = [];
+}
+initNTP();
+
+function forward(x) {
+  // Hidden layer
+  let h = ntpModel.b1.map((b,i) => {
+    let s = b;
+    for(let j=0;j<x.length;j++) s += ntpModel.W1[i][j]*x[j];
+    return Math.max(0, s); // ReLU
+  });
+  // Output layer
+  let o = ntpModel.b2.map((b,i) => {
+    let s = b;
+    for(let j=0;j<h.length;j++) s += ntpModel.W2[i][j]*h[j];
+    return s;
+  });
+  // Softmax
+  let maxO = Math.max(...o);
+  let exps = o.map(v => Math.exp(v-maxO));
+  let sum = exps.reduce((a,b)=>a+b,0);
+  let probs = exps.map(e => e/sum);
+  return { h, probs };
+}
+
+function trainNTP() {
+  const lr = 0.1;
+  let totalLoss = 0;
+  
+  for(const sample of TRAIN_DATA) {
+    const {h, probs} = forward(sample.features);
+    totalLoss -= Math.log(probs[sample.label] + 1e-10);
+    
+    // Backprop through softmax + CE
+    let dO = [...probs];
+    dO[sample.label] -= 1;
+    
+    // Update W2, b2
+    for(let i=0;i<6;i++) {
+      for(let j=0;j<16;j++) {
+        ntpModel.W2[i][j] -= lr * dO[i] * h[j];
+      }
+      ntpModel.b2[i] -= lr * dO[i];
+    }
+    
+    // Backprop to hidden
+    let dH = Array(16).fill(0);
+    for(let j=0;j<16;j++) {
+      for(let i=0;i<6;i++) dH[j] += dO[i] * ntpModel.W2[i][j];
+      if(h[j] <= 0) dH[j] = 0; // ReLU grad
+    }
+    
+    // Update W1, b1
+    for(let i=0;i<16;i++) {
+      for(let j=0;j<8;j++) {
+        ntpModel.W1[i][j] -= lr * dH[i] * sample.features[j];
+      }
+      ntpModel.b1[i] -= lr * dH[i];
+    }
+  }
+  
+  ntpEpoch++;
+  const avgLoss = totalLoss / TRAIN_DATA.length;
+  lossHistory.push(avgLoss);
+  
+  document.getElementById('ntp-epoch').textContent = ntpEpoch;
+  document.getElementById('ntp-loss').textContent = avgLoss.toFixed(4);
+  
+  drawNTP();
+  drawLossCurve();
+  updatePredictions();
+}
+
+function trainNTP10() { for(let i=0;i<10;i++) trainNTP(); }
+function resetNTP() { initNTP(); drawNTP(); drawLossCurve(); updatePredictions(); document.getElementById('ntp-epoch').textContent='0'; document.getElementById('ntp-loss').textContent='—'; }
+
+function drawNTP() {
+  const canvas = document.getElementById('ntp-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  // Draw network architecture
+  const layers = [8, 16, 6];
+  const layerX = [80, W/2, W-80];
+  const colors = ['#06b6d4','#8b5cf6','#10b981'];
+  
+  // Draw connections with weight magnitude
+  for(let l=0;l<2;l++) {
+    const weights = l===0 ? ntpModel.W1 : ntpModel.W2;
+    const n1 = layers[l], n2 = layers[l+1];
+    for(let i=0;i<Math.min(n2,16);i++) {
+      for(let j=0;j<Math.min(n1,8);j++) {
+        const y1 = 20 + j * (H-40)/(Math.min(n1,8)-1||1);
+        const y2 = 20 + i * (H-40)/(Math.min(n2,16)-1||1);
+        const w = weights[i] ? weights[i][j] || 0 : 0;
+        ctx.beginPath();
+        ctx.moveTo(layerX[l], y1);
+        ctx.lineTo(layerX[l+1], y2);
+        ctx.strokeStyle = w > 0 ? `rgba(99,102,241,${Math.min(Math.abs(w),1)})` : `rgba(239,68,68,${Math.min(Math.abs(w),1)})`;
+        ctx.lineWidth = Math.min(Math.abs(w)*3, 3);
+        ctx.stroke();
+      }
+    }
+  }
+  
+  // Draw nodes
+  for(let l=0;l<3;l++) {
+    const n = Math.min(layers[l], l===1?16:8);
+    for(let i=0;i<n;i++) {
+      const y = 20 + i * (H-40)/(n-1||1);
+      ctx.beginPath();
+      ctx.arc(layerX[l], y, 8, 0, Math.PI*2);
+      ctx.fillStyle = colors[l];
+      ctx.fill();
+    }
+  }
+  
+  // Labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Goal Features (8)', layerX[0], H-5);
+  ctx.fillText('Hidden (16, ReLU)', layerX[1], H-5);
+  ctx.fillText('Tactics (6, Softmax)', layerX[2], H-5);
+}
+
+function drawLossCurve() {
+  const canvas = document.getElementById('loss-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  if(lossHistory.length < 2) return;
+  
+  const maxL = Math.max(...lossHistory);
+  const minL = Math.min(...lossHistory);
+  const range = maxL - minL || 1;
+  
+  ctx.beginPath();
+  ctx.strokeStyle = '#6366f1';
+  ctx.lineWidth = 2;
+  lossHistory.forEach((l,i) => {
+    const x = 40 + i * (W-60) / (lossHistory.length-1);
+    const y = 10 + (1 - (l-minL)/range) * (H-30);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  
+  // Axes
+  ctx.strokeStyle = '#2a3a4a';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-20); ctx.lineTo(W-20,H-20); ctx.stroke();
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(maxL.toFixed(2), 38, 15);
+  ctx.fillText(minL.toFixed(2), 38, H-18);
+  ctx.textAlign = 'center';
+  ctx.fillText('Epoch', W/2, H-3);
+}
+
+function updatePredictions() {
+  TEST_GOALS.forEach((goal, gi) => {
+    const {probs} = forward(goal.features);
+    let html = '<div style="display:flex;gap:4px;margin-top:4px;align-items:center">';
+    probs.forEach((p,ti) => {
+      const w = Math.round(p*100);
+      html += `<div style="flex:1;text-align:center"><div style="background:var(--surface2);border-radius:3px;height:40px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;width:100%;height:${w}%;background:${ti===0?'#6366f1':ti===2?'#06b6d4':'#8b5cf6'};border-radius:3px"></div></div><div style="font-size:0.6rem;color:var(--text-dim);margin-top:2px">${TACTICS[ti].substring(0,4)}</div></div>`;
+    });
+    html += '</div>';
+    const el = document.getElementById(`pred-bars-${gi}`);
+    if(el) el.innerHTML = html;
+  });
+}
+
+// ===== MODULE 2: SAT SOLVER =====
+const SAT_INSTANCES = [
+  { clauses:[[1,2],[-1,3],[-2,-3]], vars:3, name:"Simple 3-var" },
+  { clauses:[[1,2],[1,3],[2,3],[-1,-2],[-1,-3],[-2,-3]], vars:3, name:"Pigeonhole 3→2 (UNSAT)" },
+  { clauses:[[1,2],[-1,-2],[3,4],[-3,-4],[1,3],[-1,-3]], vars:4, name:"2-coloring K3 (UNSAT)" },
+  { clauses:[[1,2,3],[-1,2,4],[1,-3,5],[-2,3,-4],[2,-4,5],[-1,-2,-5],[1,3,-5],[-2,4,5],[-1,-3,4],[1,-4,-5]], vars:5, name:"Random 3-SAT" }
+];
+
+let satState = { assignments:{}, trail:[], decisions:0, propagations:0, conflicts:0, step:0, done:false, result:null, learned:[], timer:null };
+
+function resetSAT() {
+  if(satState.timer) clearInterval(satState.timer);
+  satState = { assignments:{}, trail:[], decisions:0, propagations:0, conflicts:0, step:0, done:false, result:null, learned:[], timer:null };
+  document.getElementById('sat-trail').textContent = '-- Assignments will appear here\n-- D=Decision, P=Propagation, C=Conflict';
+  document.getElementById('sat-learned').textContent = '-- Conflict-driven clauses appear here';
+  document.getElementById('sat-decisions').textContent = '0';
+  document.getElementById('sat-propagations').textContent = '0';
+  document.getElementById('sat-conflicts').textContent = '0';
+  drawSAT();
+}
+
+function stepSAT() {
+  if(satState.done) return;
+  const idx = document.getElementById('sat-select').value;
+  const inst = SAT_INSTANCES[idx];
+  const neural = document.getElementById('sat-neural').checked;
+  
+  // Simplified DPLL step
+  const unassigned = [];
+  for(let v=1;v<=inst.vars;v++) if(!(v in satState.assignments)) unassigned.push(v);
+  
+  if(unassigned.length === 0) {
+    // Check satisfaction
+    const sat = inst.clauses.every(clause => clause.some(lit => {
+      const v = Math.abs(lit);
+      return lit > 0 ? satState.assignments[v] : !satState.assignments[v];
+    }));
+    satState.done = true;
+    satState.result = sat ? 'SAT' : 'UNSAT';
+    drawSAT();
+    return;
+  }
+  
+  // Unit propagation
+  let propagated = false;
+  for(const clause of inst.clauses) {
+    const unset = clause.filter(lit => !(Math.abs(lit) in satState.assignments));
+    const falsified = clause.filter(lit => {
+      const v = Math.abs(lit);
+      return v in satState.assignments && (lit > 0 ? !satState.assignments[v] : satState.assignments[v]);
+    });
+    if(falsified.length === clause.length) {
+      // Conflict!
+      satState.conflicts++;
+      const learned = clause.map(l => -l);
+      satState.learned.push(learned);
+      // Backtrack
+      if(satState.trail.length > 0) {
+        const last = satState.trail.pop();
+        satState.assignments[Math.abs(last.lit)] = last.lit < 0;
+        satState.trail.push({lit:-last.lit, type:'C'});
+      } else {
+        satState.done = true;
+        satState.result = 'UNSAT';
+      }
+      document.getElementById('sat-learned').textContent += `\nLearned: (${learned.map(l=>l>0?'x'+l:'¬x'+Math.abs(l)).join(' ∨ ')})`;
+      propagated = true;
+      break;
+    }
+    if(unset.length === 1 && falsified.length === clause.length - 1) {
+      const lit = unset[0];
+      const v = Math.abs(lit);
+      satState.assignments[v] = lit > 0;
+      satState.trail.push({lit, type:'P'});
+      satState.propagations++;
+      propagated = true;
+      break;
+    }
+  }
+  
+  if(!propagated && !satState.done) {
+    // Decision
+    let chosen;
+    if(neural) {
+      // Neural heuristic: pick var appearing in most unsatisfied clauses
+      const scores = {};
+      for(const clause of inst.clauses) {
+        const sat = clause.some(lit => {
+          const v = Math.abs(lit);
+          return v in satState.assignments && (lit>0 ? satState.assignments[v] : !satState.assignments[v]);
+        });
+        if(!sat) clause.forEach(lit => { const v=Math.abs(lit); if(!(v in satState.assignments)) scores[v]=(scores[v]||0)+1; });
+      }
+      chosen = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+      chosen = chosen ? parseInt(chosen[0]) : unassigned[0];
+    } else {
+      chosen = unassigned[0];
+    }
+    satState.assignments[chosen] = true;
+    satState.trail.push({lit:chosen, type:'D'});
+    satState.decisions++;
+  }
+  
+  // Update UI
+  const trailStr = satState.trail.map(t => `[${t.type}] x${Math.abs(t.lit)} = ${t.lit>0?'T':'F'}`).join('\n');
+  document.getElementById('sat-trail').textContent = trailStr || '(empty)';
+  document.getElementById('sat-decisions').textContent = satState.decisions;
+  document.getElementById('sat-propagations').textContent = satState.propagations;
+  document.getElementById('sat-conflicts').textContent = satState.conflicts;
+  
+  if(satState.done) {
+    document.getElementById('sat-trail').textContent += `\n\n→ Result: ${satState.result}`;
+  }
+  drawSAT();
+}
+
+function autoSAT() {
+  if(satState.timer) clearInterval(satState.timer);
+  satState.timer = setInterval(() => { if(satState.done){clearInterval(satState.timer);return;} stepSAT(); }, 400);
+}
+
+function drawSAT() {
+  const canvas = document.getElementById('sat-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  const idx = document.getElementById('sat-select').value;
+  const inst = SAT_INSTANCES[idx];
+  
+  // Draw variable nodes
+  const varY = 60;
+  const varSpacing = W / (inst.vars + 1);
+  for(let v=1;v<=inst.vars;v++) {
+    const x = v * varSpacing;
+    ctx.beginPath();
+    ctx.arc(x, varY, 22, 0, Math.PI*2);
+    if(v in satState.assignments) {
+      ctx.fillStyle = satState.assignments[v] ? '#0f3d2e' : '#3d1f1f';
+      ctx.strokeStyle = satState.assignments[v] ? '#10b981' : '#ef4444';
+    } else {
+      ctx.fillStyle = '#1a2332';
+      ctx.strokeStyle = '#2a3a4a';
+    }
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`x${v}`, x, varY+4);
+    if(v in satState.assignments) {
+      ctx.fillStyle = satState.assignments[v] ? '#10b981' : '#ef4444';
+      ctx.fillText(satState.assignments[v]?'T':'F', x, varY+18);
+    }
+  }
+  
+  // Draw clauses
+  const clauseY = 160;
+  const clauseSpacing = W / (inst.clauses.length + 1);
+  inst.clauses.forEach((clause, ci) => {
+    const x = (ci+1) * clauseSpacing;
+    const satisfied = clause.some(lit => {
+      const v=Math.abs(lit);
+      return v in satState.assignments && (lit>0?satState.assignments[v]:!satState.assignments[v]);
+    });
+    const falsified = clause.every(lit => {
+      const v=Math.abs(lit);
+      return v in satState.assignments && (lit>0?!satState.assignments[v]:satState.assignments[v]);
+    });
+    
+    ctx.beginPath();
+    ctx.roundRect(x-30, clauseY-15, 60, 30, 6);
+    ctx.fillStyle = satisfied ? '#0f3d2e' : falsified ? '#3d1f1f' : '#1a2332';
+    ctx.strokeStyle = satisfied ? '#10b981' : falsified ? '#ef4444' : '#2a3a4a';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    
+    ctx.fillStyle = satisfied ? '#10b981' : falsified ? '#ef4444' : '#94a3b8';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    const clauseStr = clause.map(l => l>0?`x${l}`:`¬x${Math.abs(l)}`).join('∨');
+    ctx.fillText(clauseStr, x, clauseY+4);
+    
+    // Draw edges to variables
+    clause.forEach(lit => {
+      const v = Math.abs(lit);
+      const vx = v * varSpacing;
+      ctx.beginPath();
+      ctx.moveTo(vx, varY+22);
+      ctx.lineTo(x, clauseY-15);
+      ctx.strokeStyle = lit>0 ? 'rgba(99,102,241,0.3)' : 'rgba(239,68,68,0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash(lit<0?[3,3]:[]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  });
+  
+  // Result banner
+  if(satState.done) {
+    ctx.fillStyle = satState.result==='SAT' ? '#10b981' : '#ef4444';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(satState.result, W/2, H-40);
+  }
+  
+  // Draw decision tree (bottom area)
+  if(satState.trail.length > 0) {
+    const treeY = 230;
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Decision Trail:', 20, treeY);
+    
+    satState.trail.forEach((t, i) => {
+      const x = 30 + i * 55;
+      const y = treeY + 20;
+      ctx.beginPath();
+      ctx.roundRect(x, y, 50, 22, 4);
+      ctx.fillStyle = t.type==='D' ? '#1e3a5f' : t.type==='P' ? '#2d1f4e' : '#3d1f1f';
+      ctx.fill();
+      ctx.fillStyle = t.type==='D' ? '#06b6d4' : t.type==='P' ? '#8b5cf6' : '#ef4444';
+      ctx.font = '8px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${t.type}:x${Math.abs(t.lit)}=${t.lit>0?'T':'F'}`, x+25, y+14);
+    });
+  }
+}
+
+// ===== MODULE 3: CURRY-HOWARD =====
+let chState = { context:[], term:'_', type:'', steps:[], proofComplete:false };
+
+function resetCH() {
+  const idx = document.getElementById('ch-select').value;
+  const types = ['A → A','A → B → A','(A → B) → (B → C) → (A → C)','A → B → (A ∧ B)','(A ∧ B) → A','(A ∨ B) → (A → C) → (B → C) → C'];
+  chState = { context:[], term:'_', type:types[idx], steps:[], proofComplete:false };
+  document.getElementById('ch-type').textContent = chState.type;
+  document.getElementById('ch-term').textContent = '_';
+  document.getElementById('ch-context').textContent = '-- Use λ intro to introduce hypotheses';
+  document.getElementById('ch-log').innerHTML = '';
+  drawCH();
+}
+
+function chIntro() {
+  if(chState.proofComplete) return;
+  const varNames = ['x','y','z','w','u','v'];
+  const name = varNames[chState.context.length] || 'h'+chState.context.length;
+  
+  // Parse type to extract the input of function type
+  const t = chState.type;
+  let inputType, outputType;
+  if(t.includes('→')) {
+    const arrow = findMainArrow(t);
+    inputType = t.substring(0, arrow).trim();
+    outputType = t.substring(arrow+1).trim();
+  }
+  
+  if(inputType) {
+    chState.context.push({name, type:inputType});
+    chState.type = outputType;
+    chState.term = chState.term === '_' ? `λ${name}.(_)` : chState.term.replace('(_)', `λ${name}.(_)`);
+    chState.steps.push(`intro ${name} : ${inputType}`);
+    updateCHUI();
+    checkCHComplete();
+  }
+}
+
+function findMainArrow(t) {
+  let depth = 0;
+  for(let i=0;i<t.length-1;i++) {
+    if(t[i]==='(') depth++;
+    else if(t[i]===')') depth--;
+    else if(t[i]==='→' && depth===0) return i;
+  }
+  return t.indexOf('→');
+}
+
+function chApply() {
+  if(chState.proofComplete || chState.context.length === 0) return;
+  const last = chState.context[chState.context.length-1];
+  chState.term = chState.term.replace('(_)', `(${last.name} (_))`);
+  chState.steps.push(`apply ${last.name}`);
+  updateCHUI();
+}
+
+function chVar() {
+  if(chState.proofComplete || chState.context.length === 0) return;
+  // Find matching variable
+  const matching = chState.context.find(c => c.type === chState.type || c.type.includes(chState.type));
+  if(matching) {
+    chState.term = chState.term.replace('(_)', matching.name);
+    chState.steps.push(`exact ${matching.name}`);
+    chState.proofComplete = true;
+    updateCHUI();
+  } else {
+    const first = chState.context[0];
+    chState.term = chState.term.replace('(_)', first.name);
+    chState.steps.push(`exact ${first.name}`);
+    chState.proofComplete = true;
+    updateCHUI();
+  }
+}
+
+function chPair() {
+  if(chState.proofComplete) return;
+  chState.term = chState.term.replace('(_)', '⟨(_), (_)⟩');
+  chState.steps.push('constructor (pair)');
+  updateCHUI();
+}
+function chFst() {
+  if(chState.proofComplete || chState.context.length===0) return;
+  const pair = chState.context.find(c => c.type.includes('∧'));
+  if(pair) {
+    chState.term = chState.term.replace('(_)', `π₁(${pair.name})`);
+    chState.steps.push(`fst ${pair.name}`);
+    chState.proofComplete = true;
+    updateCHUI();
+  }
+}
+function chSnd() {
+  if(chState.proofComplete || chState.context.length===0) return;
+  const pair = chState.context.find(c => c.type.includes('∧'));
+  if(pair) {
+    chState.term = chState.term.replace('(_)', `π₂(${pair.name})`);
+    chState.steps.push(`snd ${pair.name}`);
+    chState.proofComplete = true;
+    updateCHUI();
+  }
+}
+
+function checkCHComplete() {
+  if(!chState.type.includes('→') && chState.context.some(c => c.type === chState.type)) {
+    // Could auto-complete
+  }
+}
+
+function updateCHUI() {
+  document.getElementById('ch-type').textContent = chState.type;
+  document.getElementById('ch-term').textContent = chState.term;
+  document.getElementById('ch-term').style.color = chState.proofComplete ? 'var(--success)' : 'var(--cyan)';
+  document.getElementById('ch-context').textContent = chState.context.map(c => `${c.name} : ${c.type}`).join('\n') || '(empty)';
+  
+  const log = document.getElementById('ch-log');
+  log.innerHTML = chState.steps.map((s,i) => `<div class="log-entry"><span class="time">[${i+1}]</span> <span class="msg">${s}</span></div>`).join('');
+  if(chState.proofComplete) log.innerHTML += `<div class="log-entry" style="color:var(--success)">✓ Proof complete! Term: ${chState.term}</div>`;
+  
+  drawCH();
+}
+
+function drawCH() {
+  const canvas = document.getElementById('ch-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  // Draw derivation tree
+  const centerX = W/2;
+  const bottomY = H - 40;
+  
+  // Conclusion at bottom
+  ctx.fillStyle = chState.proofComplete ? '#10b981' : '#06b6d4';
+  ctx.font = '13px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`⊢ ${chState.term} : ${document.getElementById('ch-select').options[document.getElementById('ch-select').value].text.split('(')[0].trim()}`, centerX, bottomY);
+  
+  // Draw horizontal rule
+  ctx.beginPath();
+  ctx.moveTo(centerX - 200, bottomY - 20);
+  ctx.lineTo(centerX + 200, bottomY - 20);
+  ctx.strokeStyle = '#6366f1';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Draw context assumptions above
+  chState.context.forEach((c, i) => {
+    const x = 80 + i * 140;
+    const y = 40 + i * 40;
+    ctx.fillStyle = '#1e3a5f';
+    ctx.beginPath();
+    ctx.roundRect(x-50, y-12, 100, 24, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#06b6d4';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${c.name} : ${c.type}`, x, y+4);
+  });
+  
+  // Steps visualization
+  chState.steps.forEach((s, i) => {
+    const y = 100 + i * 30;
+    ctx.fillStyle = '#8b5cf6';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${i+1}. ${s}`, 20, y);
+  });
+}
+
+// ===== MODULE 4: DIFFICULTY ESTIMATOR =====
+let diffTheorems = [];
+let diffView = 'scatter';
+
+function generateTheorems() {
+  diffTheorems = [];
+  for(let i=0;i<50;i++) {
+    const depth = Math.floor(Math.random()*6)+1;
+    const vars = Math.floor(Math.random()*8)+1;
+    const quantifiers = Math.floor(Math.random()*4);
+    const connectives = Math.floor(Math.random()*6)+1;
+    const steps = Math.round(depth*1.5 + vars*0.8 + quantifiers*2 + connectives*0.5 + Math.random()*3);
+    const difficulty = Math.min(10, depth*0.8 + quantifiers*1.5 + Math.random()*2);
+    diffTheorems.push({depth,vars,quantifiers,connectives,steps,difficulty});
+  }
+  redrawDiff();
+  drawFeatureImportance();
+  drawDiffDist();
+  updateDiffPredictions();
+}
+
+function toggleDiffView() { diffView = diffView==='scatter'?'heatmap':'scatter'; redrawDiff(); }
+
+function redrawDiff() {
+  const canvas = document.getElementById('diff-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  if(diffTheorems.length===0) {
+    ctx.fillStyle='#94a3b8'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Click "Generate Theorems" to populate', W/2, H/2);
+    return;
+  }
+  
+  const xKey = document.getElementById('diff-x').value;
+  const yKey = document.getElementById('diff-y').value;
+  
+  const xVals = diffTheorems.map(t=>t[xKey]);
+  const yVals = diffTheorems.map(t=>t[yKey]);
+  const maxX=Math.max(...xVals), maxY=Math.max(...yVals);
+  
+  const padL=50, padR=20, padT=20, padB=40;
+  
+  // Axes
+  ctx.strokeStyle='#2a3a4a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif';
+  ctx.textAlign='center'; ctx.fillText(xKey, W/2, H-5);
+  ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2); ctx.fillText(yKey,0,0); ctx.restore();
+  
+  // Points colored by difficulty
+  diffTheorems.forEach(t => {
+    const x = padL + (t[xKey]/maxX) * (W-padL-padR);
+    const y = H - padB - (t[yKey]/maxY) * (H-padT-padB);
+    const hue = 260 - t.difficulty*20; // purple to red
+    ctx.beginPath();
+    ctx.arc(x, y, 5+t.difficulty*0.5, 0, Math.PI*2);
+    ctx.fillStyle = `hsla(${hue},70%,50%,0.7)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${hue},70%,60%,1)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+  
+  // Legend
+  ctx.fillStyle='#94a3b8'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('Color = Difficulty (purple=easy, red=hard)', padL+10, padT+15);
+}
+
+function drawFeatureImportance() {
+  const canvas = document.getElementById('feat-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  const features = ['Nesting Depth','Var Count','Quantifiers','Connectives'];
+  const weights = [0.8, 0.3, 1.5, 0.5]; // simulated learned weights
+  const maxW = Math.max(...weights);
+  
+  features.forEach((f,i) => {
+    const y = 20 + i*45;
+    const barW = (weights[i]/maxW) * (W-120);
+    ctx.fillStyle = `hsla(${240+i*30},60%,50%,0.8)`;
+    ctx.fillRect(100, y, barW, 25);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(f, 95, y+16);
+    ctx.textAlign = 'left';
+    ctx.fillText(weights[i].toFixed(2), 105+barW, y+16);
+  });
+}
+
+function drawDiffDist() {
+  const canvas = document.getElementById('dist-canvas');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  if(diffTheorems.length===0) return;
+  
+  // Histogram of difficulty
+  const bins = Array(10).fill(0);
+  diffTheorems.forEach(t => { const b=Math.min(9,Math.floor(t.difficulty)); bins[b]++; });
+  const maxB = Math.max(...bins);
+  
+  const barW = (W-40)/10;
+  bins.forEach((b,i) => {
+    const h = (b/maxB)*(H-30);
+    ctx.fillStyle = `hsla(${260-i*20},60%,50%,0.7)`;
+    ctx.fillRect(20+i*barW, H-20-h, barW-2, h);
+  });
+  ctx.fillStyle='#94a3b8'; ctx.font='9px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('Easy → Hard', W/2, H-3);
+}
+
+function updateDiffPredictions() {
+  const el = document.getElementById('diff-predictions');
+  if(diffTheorems.length===0) { el.innerHTML='<p style="color:var(--text-dim);font-size:0.8rem">Generate theorems first</p>'; return; }
+  
+  const samples = diffTheorems.slice(0,5);
+  el.innerHTML = samples.map(t => `
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;padding:0.5rem;background:var(--surface2);border-radius:6px">
+      <div style="flex:1;font-size:0.75rem;font-family:var(--font-mono)">d=${t.depth} v=${t.vars} q=${t.quantifiers} c=${t.connectives}</div>
+      <div style="width:80px">
+        <div class="progress-bar"><div class="progress-fill" style="width:${t.difficulty*10}%;background:hsla(${260-t.difficulty*20},60%,50%,1)"></div></div>
+      </div>
+      <div style="font-size:0.8rem;font-weight:600;color:hsla(${260-t.difficulty*20},60%,60%,1)">${t.difficulty.toFixed(1)}</div>
+    </div>
+  `).join('');
+}
+
+// ===== MODULE 5: VERIFICATION ARENA =====
+const BENCHMARKS = {
+  nat: Array.from({length:20}, (_,i) => ({name:`Nat.thm_${i+1}`, difficulty:Math.random()*8+1, category:'nat'})),
+  logic: Array.from({length:15}, (_,i) => ({name:`Logic.prop_${i+1}`, difficulty:Math.random()*7+1, category:'logic'})),
+  list: Array.from({length:12}, (_,i) => ({name:`List.lemma_${i+1}`, difficulty:Math.random()*9+1, category:'list'})),
+  mixed: Array.from({length:30}, (_,i) => ({name:`Mixed.thm_${i+1}`, difficulty:Math.random()*10+1, category:'mixed'}))
+};
+
+let arenaState = { running:false, timer:null, neural:{proved:0,failed:0,time:0,log:[]}, classical:{proved:0,failed:0,time:0,log:[]}, idx:0, bench:[] };
+
+function resetArena() {
+  if(arenaState.timer) clearInterval(arenaState.timer);
+  arenaState = { running:false, timer:null, neural:{proved:0,failed:0,time:0,log:[]}, classical:{proved:0,failed:0,time:0,log:[]}, idx:0, bench:[] };
+  ['neural-progress','classical-progress'].forEach(id => document.getElementById(id).style.width='0%');
+  ['neural-proved','classical-proved'].forEach(id => document.getElementById(id).textContent='0');
+  ['neural-failed','classical-failed'].forEach(id => document.getElementById(id).textContent='0');
+  ['neural-time','classical-time'].forEach(id => document.getElementById(id).textContent='0.0s');
+  ['neural-log','classical-log'].forEach(id => document.getElementById(id).innerHTML='');
+  ['arena-neural-wins','arena-ties','arena-classical-wins'].forEach(id => document.getElementById(id).textContent='—');
+  const benchKey = document.getElementById('arena-bench').value;
+  const total = BENCHMARKS[benchKey].length;
+  document.getElementById('neural-total').textContent = total;
+  document.getElementById('classical-total').textContent = total;
+  drawArenaChart('neural-canvas', []);
+  drawArenaChart('classical-canvas', []);
+}
+
+function startArena() {
+  resetArena();
+  const benchKey = document.getElementById('arena-bench').value;
+  arenaState.bench = [...BENCHMARKS[benchKey]];
+  arenaState.running = true;
+  const speed = parseInt(document.getElementById('arena-speed').value);
+  const interval = Math.max(100, 600 - speed*50);
+  
+  arenaState.timer = setInterval(() => {
+    if(arenaState.idx >= arenaState.bench.length) {
+      clearInterval(arenaState.timer);
+      arenaState.running = false;
+      showArenaResults();
+      return;
+    }
+    
+    const thm = arenaState.bench[arenaState.idx];
+    const total = arenaState.bench.length;
+    
+    // Neural: better on hard theorems, uses learned heuristics
+    const neuralSuccess = Math.random() < (0.85 - thm.difficulty*0.04);
+    const neuralTime = thm.difficulty * (0.3 + Math.random()*0.2);
+    arenaState.neural.time += neuralTime;
+    if(neuralSuccess) { arenaState.neural.proved++; arenaState.neural.log.push({name:thm.name,result:'✓',time:neuralTime}); }
+    else { arenaState.neural.failed++; arenaState.neural.log.push({name:thm.name,result:'✗',time:neuralTime}); }
+    
+    // Classical: better on easy, structured theorems
+    const classicalSuccess = Math.random() < (0.75 - thm.difficulty*0.05);
+    const classicalTime = thm.difficulty * (0.5 + Math.random()*0.3);
+    arenaState.classical.time += classicalTime;
+    if(classicalSuccess) { arenaState.classical.proved++; arenaState.classical.log.push({name:thm.name,result:'✓',time:classicalTime}); }
+    else { arenaState.classical.failed++; arenaState.classical.log.push({name:thm.name,result:'✗',time:classicalTime}); }
+    
+    arenaState.idx++;
+    
+    // Update UI
+    const pct = (arenaState.idx/total)*100;
+    document.getElementById('neural-progress').style.width = pct+'%';
+    document.getElementById('classical-progress').style.width = pct+'%';
+    document.getElementById('neural-proved').textContent = arenaState.neural.proved;
+    document.getElementById('neural-failed').textContent = arenaState.neural.failed;
+    document.getElementById('neural-time').textContent = arenaState.neural.time.toFixed(1)+'s';
+    document.getElementById('classical-proved').textContent = arenaState.classical.proved;
+    document.getElementById('classical-failed').textContent = arenaState.classical.failed;
+    document.getElementById('classical-time').textContent = arenaState.classical.time.toFixed(1)+'s';
+    
+    // Update logs
+    const nLog = document.getElementById('neural-log');
+    const lastN = arenaState.neural.log[arenaState.neural.log.length-1];
+    nLog.innerHTML += `<div class="log-entry"><span style="color:${lastN.result==='✓'?'var(--success)':'var(--error)'}">${lastN.result}</span> ${lastN.name} (${lastN.time.toFixed(2)}s)</div>`;
+    nLog.scrollTop = nLog.scrollHeight;
+    
+    const cLog = document.getElementById('classical-log');
+    const lastC = arenaState.classical.log[arenaState.classical.log.length-1];
+    cLog.innerHTML += `<div class="log-entry"><span style="color:${lastC.result==='✓'?'var(--success)':'var(--error)'}">${lastC.result}</span> ${lastC.name} (${lastC.time.toFixed(2)}s)</div>`;
+    cLog.scrollTop = cLog.scrollHeight;
+    
+    drawArenaChart('neural-canvas', arenaState.neural.log);
+    drawArenaChart('classical-canvas', arenaState.classical.log);
+  }, interval);
+}
+
+function drawArenaChart(canvasId, log) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  
+  if(log.length===0) return;
+  
+  // Cumulative success rate
+  let successes = 0;
+  const rates = log.map((l,i) => { if(l.result==='✓') successes++; return successes/(i+1); });
+  
+  ctx.beginPath();
+  ctx.strokeStyle = canvasId.includes('neural') ? '#6366f1' : '#f59e0b';
+  ctx.lineWidth = 2;
+  rates.forEach((r,i) => {
+    const x = 10 + i*(W-20)/(rates.length-1||1);
+    const y = H-10 - r*(H-20);
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  
+  // Fill area
+  ctx.lineTo(10+(rates.length-1)*(W-20)/(rates.length-1||1), H-10);
+  ctx.lineTo(10, H-10);
+  ctx.closePath();
+  ctx.fillStyle = canvasId.includes('neural') ? 'rgba(99,102,241,0.1)' : 'rgba(245,158,11,0.1)';
+  ctx.fill();
+  
+  // Label
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Success Rate: ${(rates[rates.length-1]*100).toFixed(1)}%`, 10, 15);
+}
+
+function showArenaResults() {
+  let neuralWins=0, classicalWins=0, ties=0;
+  for(let i=0;i<arenaState.bench.length;i++) {
+    const n = arenaState.neural.log[i].result === '✓';
+    const c = arenaState.classical.log[i].result === '✓';
+    if(n && !c) neuralWins++;
+    else if(!n && c) classicalWins++;
+    else ties++;
+  }
+  document.getElementById('arena-neural-wins').textContent = neuralWins;
+  document.getElementById('arena-ties').textContent = ties;
+  document.getElementById('arena-classical-wins').textContent = classicalWins;
+}
+
+// ===== INIT =====
+resetProofTree();
+resetSAT();
+resetCH();
+generateTheorems();
+drawNTP();
+updatePredictions();
+resetArena();
+</script>
+</body>
+</html>
